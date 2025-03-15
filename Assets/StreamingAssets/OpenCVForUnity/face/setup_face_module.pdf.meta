@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 138c5566d578ac24482a3a79a3919800
+timeCreated: 1542907384
+licenseType: Store
+DefaultImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 21088
+  packageName: OpenCV for Unity
+  packageVersion: 2.6.5
+  assetPath: Assets/OpenCVForUnity/StreamingAssets/OpenCVForUnity/face/setup_face_module.pdf
+  uploadId: 719270
