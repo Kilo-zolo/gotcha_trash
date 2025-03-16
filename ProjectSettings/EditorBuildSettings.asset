@@ -293,9 +293,12 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Main.unity
     guid: ddeadb253d88c894ca7b57d553e6c932
-  - enabled: 1
+  - enabled: 0
     path: Assets/test.unity
     guid: 73b2be76419361c4fa09e9e135202ec8
+  - enabled: 1
+    path: Assets/CameraView.unity
+    guid: 1f6acff118db54ddcbbb194746e77f8e
   m_configObjects:
     UnityEditor.XR.ARCore.ARCoreSettings: {fileID: 11400000, guid: 6ee72d15cf39dd748a13eac57397b9af,
       type: 2}
