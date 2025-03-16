@@ -924,11 +924,11 @@ PlayerSettings:
   captureStartupLogs: {}
   activeInputHandler: 1
   windowsGamepadBackendHint: 0
-  cloudProjectId: 7c404f9e-51c7-44f8-a507-37e27752fe15
+  cloudProjectId: 
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
-  projectName: gotcha-trash
-  organizationId: krish5gupta25
+  projectName: 
+  organizationId: 
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
   hmiLoadingImage: {fileID: 0}
