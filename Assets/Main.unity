@@ -2039,14 +2039,14 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1060229794}
+      - m_Target: {fileID: 4444459598698162910}
         m_TargetAssemblyTypeName: ChangeScene, Assembly-CSharp
         m_MethodName: moveToScene
         m_Mode: 3
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 5
+          m_IntArgument: 1
           m_FloatArgument: 0
           m_StringArgument: 
           m_BoolArgument: 0
@@ -2518,7 +2518,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: -0.319}
   m_AnchorMin: {x: 0, y: 0.46028605}
   m_AnchorMax: {x: 1, y: 0.92700005}
-  m_AnchoredPosition: {x: 0, y: 2.5815048}
+  m_AnchoredPosition: {x: 0, y: 2.5815125}
   m_SizeDelta: {x: 0, y: -10.1546}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1386750395
@@ -2808,7 +2808,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0.392}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0.008804321, y: -1.5876999}
+  m_AnchoredPosition: {x: 0.0087890625, y: -1.5877075}
   m_SizeDelta: {x: -0.004, y: -3.1753}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1457699286
@@ -3971,7 +3971,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -0.000015258789, y: -88.06391}
+  m_AnchoredPosition: {x: 0, y: -0.000045776367}
   m_SizeDelta: {x: -0.000030518, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1847803191
@@ -4477,6 +4477,18 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: dd72f2c97d0e4b24cb23ff739c726a2b, type: 3}
+--- !u!114 &4444459598698162910 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7909402472098723272, guid: dd72f2c97d0e4b24cb23ff739c726a2b,
+    type: 3}
+  m_PrefabInstance: {fileID: 4444459598698162909}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dabc1c78775127e45bf42af34746e6cf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
