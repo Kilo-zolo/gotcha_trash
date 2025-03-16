@@ -335,30 +335,39 @@ namespace OpenCVForUnityExample.DnnModel
 
             foreach (var d in data.Reverse())
             {
+                int classId = (int)d.cls;
+                string classLabel = getClassLabel(classId).ToLower(); 
+
+                if (!(classLabel.Equals("bottle") || classLabel.Equals("cup") || classLabel.Equals("microwave")))
+                    continue;
+
+                if (classLabel.Equals("cup") || classLabel.Equals("microwave"))
+                {
+                    classLabel = "trashcan";
+                }
+
                 float left = d.x1;
                 float top = d.y1;
                 float right = d.x2;
                 float bottom = d.y2;
                 float conf = d.conf;
-                int classId = (int)d.cls;
 
                 Scalar c = palette[classId % palette.Count];
                 Scalar color = isRGB ? c : new Scalar(c.val[2], c.val[1], c.val[0], c.val[3]);
 
                 Imgproc.rectangle(image, new Point(left, top), new Point(right, bottom), color, 2);
 
-                string label = $"{getClassLabel(classId)}, {conf:F2}";
+                string label = $"{classLabel}, {conf:F2}";
 
                 int[] baseLine = new int[1];
                 Size labelSize = Imgproc.getTextSize(label, Imgproc.FONT_HERSHEY_SIMPLEX, 0.5, 1, baseLine);
 
-                top = Mathf.Max((float)top, (float)labelSize.height);
+                top = Mathf.Max(top, (float)labelSize.height);
                 Imgproc.rectangle(image, new Point(left, top - labelSize.height),
                     new Point(left + labelSize.width, top + baseLine[0]), color, Core.FILLED);
                 Imgproc.putText(image, label, new Point(left, top), Imgproc.FONT_HERSHEY_SIMPLEX, 0.5, Scalar.all(255), 1, Imgproc.LINE_AA);
             }
 
-            // Print results
             if (print_results)
             {
                 StringBuilder sb = new StringBuilder(512);
@@ -366,7 +375,17 @@ namespace OpenCVForUnityExample.DnnModel
                 for (int i = 0; i < data.Length; ++i)
                 {
                     var d = data[i];
-                    string label = getClassLabel(d.cls);
+                    string label = getClassLabel(d.cls).ToLower();
+
+                    // Only include allowed classes in printed results.
+                    if (!(label.Equals("bottle") || label.Equals("cup") || label.Equals("microwave")))
+                        continue;
+
+                    // Remap cup and microwave to trashcan for printed output.
+                    if (label.Equals("cup") || label.Equals("microwave"))
+                    {
+                        label = "trashcan";
+                    }
 
                     sb.AppendFormat("-----------object {0}-----------", i + 1);
                     sb.AppendLine();
@@ -381,6 +400,8 @@ namespace OpenCVForUnityExample.DnnModel
                 Debug.Log(sb.ToString());
             }
         }
+
+
 
         public virtual void dispose()
         {
