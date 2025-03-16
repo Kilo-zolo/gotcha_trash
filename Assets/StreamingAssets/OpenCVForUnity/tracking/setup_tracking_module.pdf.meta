@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: e25dff3addf809d42a368794edaf5a41
+DefaultImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 21088
+  packageName: OpenCV for Unity
+  packageVersion: 2.6.5
+  assetPath: Assets/OpenCVForUnity/StreamingAssets/OpenCVForUnity/tracking/setup_tracking_module.pdf
+  uploadId: 719270
