@@ -57,5 +57,4 @@ Compiling might take a minute, so please be patient.
 - Ensure Unity and Android SDKs are properly set up before building.
 - Compilation may take a few moments.
 
-Happy coding! 🚀🌱
 
