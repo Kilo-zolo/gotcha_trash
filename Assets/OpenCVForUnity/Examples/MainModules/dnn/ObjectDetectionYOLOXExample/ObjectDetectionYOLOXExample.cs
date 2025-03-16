@@ -15,10 +15,10 @@ namespace OpenCVForUnityExample
     /// <summary>
     /// Global score holder.
     /// </summary>
-    public static class GlobalScore
-    {
-        public static int score = 0;
-    }
+    // public static class GlobalScore
+    // {
+    //     public static int score = 0;
+    // }
 
     /// <summary>
     /// Object Detection YOLOX Example
@@ -235,10 +235,10 @@ namespace OpenCVForUnityExample
                 Utils.matToTexture2D(rgbaMat, texture);
             }
 
-            // Increment the score every frame
-            scoreCounter++;
-            GlobalScore.score = scoreCounter;
-            Debug.Log("Score: " + GlobalScore.score);
+            // // Increment the score every frame
+            // scoreCounter++;
+            // GlobalScore.score = scoreCounter;
+            // Debug.Log("Score: " + GlobalScore.score);
         }
 
         void OnDestroy()

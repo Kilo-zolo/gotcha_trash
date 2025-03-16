@@ -38,11 +38,9 @@ namespace OpenCVForUnityExample.DnnModel
         int[] strides = new int[] { 8, 16, 32 };
 
         List<string> classNames;
-
         List<Scalar> palette;
 
         Mat paddedImg;
-
         Mat pickup_blob_numx6;
         Mat boxesMat;
 
@@ -52,6 +50,11 @@ namespace OpenCVForUnityExample.DnnModel
         MatOfRect2d boxes;
         MatOfFloat confidences;
         MatOfInt class_ids;
+
+        // Score and cooldown variables
+        public int score = 0;
+        private float lastScoreIncrementTime = -120f; // so that the first increment can happen immediately
+        private const float scoreCooldown = 120f; // 2 minutes = 120 seconds
 
         public YOLOXObjectDetector(string modelFilepath, string configFilepath, string classesFilepath, Size inputSize, float confThreshold = 0.25f, float nmsThreshold = 0.45f, int topK = 1000, int backend = Dnn.DNN_BACKEND_OPENCV, int target = Dnn.DNN_TARGET_CPU)
         {
@@ -197,7 +200,6 @@ namespace OpenCVForUnityExample.DnnModel
             Mat confidence = output_blob_numx85.colRange(new OpenCVRange(4, 5));
             Mat classes_scores_delta = output_blob_numx85.colRange(new OpenCVRange(5, 5 + num_classes));
 
-
             Mat cxy_delta = box_delta.colRange(new OpenCVRange(0, 2));
             Mat wh_delta = box_delta.colRange(new OpenCVRange(2, 4));
 
@@ -207,7 +209,6 @@ namespace OpenCVForUnityExample.DnnModel
             Core.multiply(cxy_delta, expanded_strides_numx2, cxy_delta);
             Core.exp(wh_delta, wh_delta);
             Core.multiply(wh_delta, expanded_strides_numx2, wh_delta);
-
 
             // pre-NMS
             // Pick up rows to process by conf_threshold value and calculate scores and class_ids.
@@ -257,7 +258,6 @@ namespace OpenCVForUnityExample.DnnModel
             Core.divide(pickup_wh_delta, new Scalar(2.0), pickup_wh_delta);
             Core.subtract(pickup_cxy_delta, pickup_wh_delta, pickup_xy1);
 
-
             if (boxes_m_c4 == null || boxes_m_c4.rows() != num_pickup)
                 boxes_m_c4 = new Mat(num_pickup, 1, CvType.CV_64FC4);
             if (confidences_m == null || confidences_m.rows() != num_pickup)
@@ -267,7 +267,6 @@ namespace OpenCVForUnityExample.DnnModel
                 boxes = new MatOfRect2d(boxes_m_c4);
             if (confidences == null || confidences.rows() != num_pickup)
                 confidences = new MatOfFloat(confidences_m);
-
 
             // non-maximum suppression
             Mat boxes_m_c1 = boxes_m_c4.reshape(1, num_pickup);
@@ -327,66 +326,105 @@ namespace OpenCVForUnityExample.DnnModel
         {
             if (image.IsDisposed)
                 return;
-
+        
             if (results.empty() || results.cols() < 6)
                 return;
-
+        
             DetectionData[] data = getData(results);
-
-            foreach (var d in data.Reverse())
+        
+            // First, determine if both a bottle and a trashcan are present in this frame.
+            bool bottleFound = false;
+            bool trashcanFound = false;
+        
+            foreach (var d in data)
             {
                 int classId = (int)d.cls;
-                string classLabel = getClassLabel(classId).ToLower(); 
-
+                string classLabel = getClassLabel(classId).ToLower();
+        
+                // Process only allowed classes.
                 if (!(classLabel.Equals("bottle") || classLabel.Equals("cup") || classLabel.Equals("microwave")))
                     continue;
-
+        
                 if (classLabel.Equals("cup") || classLabel.Equals("microwave"))
                 {
                     classLabel = "trashcan";
                 }
-
+        
+                if (classLabel.Equals("bottle"))
+                    bottleFound = true;
+                if (classLabel.Equals("trashcan"))
+                    trashcanFound = true;
+            }
+        
+            if (bottleFound && trashcanFound)
+            {
+                if (Time.time - lastScoreIncrementTime >= scoreCooldown)
+                {
+                    score++;
+                    lastScoreIncrementTime = Time.time;
+                    Debug.Log("Both bottle and trashcan detected. Incrementing score.");
+                }
+                else
+                {
+                    Debug.Log("Score increment on cooldown.");
+                }
+            }
+        
+            Debug.Log("Score: " + score);
+        
+            // Then, visualize the detections.
+            foreach (var d in data.Reverse())
+            {
+                int classId = (int)d.cls;
+                string classLabel = getClassLabel(classId).ToLower(); 
+        
+                if (!(classLabel.Equals("bottle") || classLabel.Equals("cup") || classLabel.Equals("microwave")))
+                    continue;
+        
+                if (classLabel.Equals("cup") || classLabel.Equals("microwave"))
+                {
+                    classLabel = "trashcan";
+                }
+        
                 float left = d.x1;
                 float top = d.y1;
                 float right = d.x2;
                 float bottom = d.y2;
                 float conf = d.conf;
-
+        
                 Scalar c = palette[classId % palette.Count];
                 Scalar color = isRGB ? c : new Scalar(c.val[2], c.val[1], c.val[0], c.val[3]);
-
+        
                 Imgproc.rectangle(image, new Point(left, top), new Point(right, bottom), color, 2);
-
+        
                 string label = $"{classLabel}, {conf:F2}";
-
+        
                 int[] baseLine = new int[1];
                 Size labelSize = Imgproc.getTextSize(label, Imgproc.FONT_HERSHEY_SIMPLEX, 0.5, 1, baseLine);
-
+        
                 top = Mathf.Max(top, (float)labelSize.height);
                 Imgproc.rectangle(image, new Point(left, top - labelSize.height),
                     new Point(left + labelSize.width, top + baseLine[0]), color, Core.FILLED);
                 Imgproc.putText(image, label, new Point(left, top), Imgproc.FONT_HERSHEY_SIMPLEX, 0.5, Scalar.all(255), 1, Imgproc.LINE_AA);
             }
-
+        
             if (print_results)
             {
                 StringBuilder sb = new StringBuilder(512);
-
+        
                 for (int i = 0; i < data.Length; ++i)
                 {
                     var d = data[i];
                     string label = getClassLabel(d.cls).ToLower();
-
-                    // Only include allowed classes in printed results.
+        
                     if (!(label.Equals("bottle") || label.Equals("cup") || label.Equals("microwave")))
                         continue;
-
-                    // Remap cup and microwave to trashcan for printed output.
+        
                     if (label.Equals("cup") || label.Equals("microwave"))
                     {
                         label = "trashcan";
                     }
-
+        
                     sb.AppendFormat("-----------object {0}-----------", i + 1);
                     sb.AppendLine();
                     sb.AppendFormat("conf: {0:F4}", d.conf);
@@ -396,31 +434,29 @@ namespace OpenCVForUnityExample.DnnModel
                     sb.AppendFormat("box: {0:F0} {1:F0} {2:F0} {3:F0}", d.x1, d.y1, d.x2, d.y2);
                     sb.AppendLine();
                 }
-
+        
                 Debug.Log(sb.ToString());
             }
         }
-
-
-
+    
         public virtual void dispose()
         {
             if (object_detection_net != null)
                 object_detection_net.Dispose();
-
+    
             if (paddedImg != null)
                 paddedImg.Dispose();
-
+    
             paddedImg = null;
-
+    
             if (pickup_blob_numx6 != null)
                 pickup_blob_numx6.Dispose();
             if (boxesMat != null)
                 boxesMat.Dispose();
-
+    
             pickup_blob_numx6 = null;
             boxesMat = null;
-
+    
             if (boxes_m_c4 != null)
                 boxes_m_c4.Dispose();
             if (confidences_m != null)
@@ -433,7 +469,7 @@ namespace OpenCVForUnityExample.DnnModel
                 confidences.Dispose();
             if (class_ids != null)
                 class_ids.Dispose();
-
+    
             boxes_m_c4 = null;
             confidences_m = null;
             class_ids_m = null;
@@ -441,34 +477,34 @@ namespace OpenCVForUnityExample.DnnModel
             confidences = null;
             class_ids = null;
         }
-
+    
         protected virtual void generateAnchors(out Mat grids, out Mat expanded_strides)
         {
             int num = 0;
-
+    
             int[] hsizes = new int[strides.Length];// stride for stride in self.strides
             int[] wsizes = new int[strides.Length];// stride for stride in self.strides
             for (int i = 0; i < strides.Length; i++)
             {
                 hsizes[i] = (int)(input_size.height / strides[i]);
                 wsizes[i] = (int)(input_size.width / strides[i]);
-
+    
                 num += hsizes[i] * wsizes[i];
             }
-
+    
             grids = new Mat(new int[] { 1, num, 2 }, CvType.CV_32FC1);
             expanded_strides = new Mat(new int[] { 1, num, 2 }, CvType.CV_32FC1);
-
+    
             Mat grids_numx2 = grids.reshape(1, num);//num*2*CV_32FC1
             Mat expanded_strides_numx2 = expanded_strides.reshape(1, num);//num*2*CV_32FC1
             int index = 0;
-
+    
             for (int i = 0; i < strides.Length; i++)
             {
                 int hsize = hsizes[i];
                 int wsize = wsizes[i];
                 int stride = strides[i];
-
+    
                 // #xv, yv = np.meshgrid(np.arange(hsize), np.arange(wsize))
                 Mat w_arange = arange(0, wsize);
                 Mat h_arange = arange(0, hsize).t();
@@ -476,7 +512,7 @@ namespace OpenCVForUnityExample.DnnModel
                 tile(w_arange, hsize, 1, xv);
                 Mat yv = new Mat(hsize, wsize, CvType.CV_32FC1);
                 tile(h_arange, 1, wsize, yv);
-
+    
                 // #grid = np.stack((xv, yv), 2).reshape(1, -1, 2)
                 // #self.grids.append(grid)
                 Mat xv_totalx1 = xv.reshape(1, (int)xv.total());//total*1*CV_32FC1
@@ -485,55 +521,55 @@ namespace OpenCVForUnityExample.DnnModel
                 Mat yv_totalx1 = yv.reshape(1, (int)yv.total());//total*1*CV_32FC1
                 grid_roi = new Mat(grids_numx2, new OpenCVRect(1, index, 1, (int)yv.total()));//total*1*CV_32FC1
                 yv_totalx1.copyTo(grid_roi);
-
+    
                 // #shap = e = grid.shape[:2]
                 // #self.expanded_strides.append(np.full((*shape, 1), stride))
                 int shape = hsize * wsize;
                 Mat expanded_strides_roi = expanded_strides_numx2.rowRange(index, index + shape);
                 Imgproc.rectangle(expanded_strides_roi, new OpenCVRect(0, 0, 2, shape), Scalar.all(stride));
-
+    
                 index += hsize * wsize;
             }
         }
-
+    
         private Mat arange(int start, int stop)
         {
             if (start < 0 || stop < 0 || stop < start || stop == start)
                 throw new ArgumentException("start < 0 || stop < 0 || stop < start || stop == start");
-
+    
             float[] data = Enumerable.Range(start, stop).Select(i => (float)i).ToArray();
             Mat dst = new Mat(1, stop - start, CvType.CV_32FC1);
             dst.put(0, 0, data);
-
+    
             return dst;
         }
-
+    
         private void tile(Mat a, int ny, int nx, Mat dst)
         {
             if (a == null)
                 throw new ArgumentNullException("a");
             if (a != null)
                 a.ThrowIfDisposed();
-
+    
             if (dst == null)
                 throw new ArgumentNullException("dst");
             if (dst != null)
                 dst.ThrowIfDisposed();
             if (dst.rows() != a.rows() * ny || dst.cols() != a.cols() * nx || dst.type() != a.type())
                 throw new ArgumentException("dst.rows() != a.rows() * ny || dst.cols() != a.cols() * nx || dst.type() != a.type()");
-
+    
             Core.repeat(a, ny, nx, dst);
         }
-
+    
         protected virtual List<string> readClassNames(string filename)
         {
             List<string> classNames = new List<string>();
-
+    
             System.IO.StreamReader cReader = null;
             try
             {
                 cReader = new System.IO.StreamReader(filename, System.Text.Encoding.Default);
-
+    
                 while (cReader.Peek() >= 0)
                 {
                     string name = cReader.ReadLine();
@@ -550,10 +586,10 @@ namespace OpenCVForUnityExample.DnnModel
                 if (cReader != null)
                     cReader.Close();
             }
-
+    
             return classNames;
         }
-
+    
         [StructLayout(LayoutKind.Sequential)]
         public readonly struct DetectionData
         {
@@ -563,10 +599,10 @@ namespace OpenCVForUnityExample.DnnModel
             public readonly float y2;
             public readonly float conf;
             public readonly float cls;
-
+    
             // sizeof(DetectionData)
             public const int Size = 6 * sizeof(float);
-
+    
             public DetectionData(int x1, int y1, int x2, int y2, float conf, int cls)
             {
                 this.x1 = x1;
@@ -576,24 +612,24 @@ namespace OpenCVForUnityExample.DnnModel
                 this.conf = conf;
                 this.cls = cls;
             }
-
+    
             public override string ToString()
             {
                 return "x1:" + x1.ToString() + " y1:" + y1.ToString() + " x2:" + x2.ToString() + " y2:" + y2.ToString() + " conf:" + conf.ToString() + "  cls:" + cls.ToString();
             }
         };
-
+    
         public virtual DetectionData[] getData(Mat results)
         {
             if (results.empty())
                 return new DetectionData[0];
-
+    
             var dst = new DetectionData[results.rows()];
             MatUtils.copyFromMat(results, dst);
-
+    
             return dst;
         }
-
+    
         public virtual string getClassLabel(float id)
         {
             int classId = (int)id;
@@ -607,7 +643,7 @@ namespace OpenCVForUnityExample.DnnModel
             }
             if (string.IsNullOrEmpty(className))
                 className = classId.ToString();
-
+    
             return className;
         }
     }
